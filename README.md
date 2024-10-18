@@ -10,6 +10,9 @@
 
     https://github.com/PATLITE-Corporation/NE-USB_windows_python_example/blob/main/NE-USB%20(windows%20python)%2020230817.pdf
 
+    https://gill.net.in/posts/reverse-engineering-a-usb-device-with-rust/
+    
+
 ## Requirements
 
   Must have gcc installed and have its path set
