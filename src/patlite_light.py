@@ -119,7 +119,7 @@ def main():
 
     # Get the command identifier specified by the command line argument
     commandId = 0;
-    if argc > 1:
+    if argc > 1: 
         commandId = args[1];
 
     if commandId == '1':

@@ -191,14 +191,8 @@ fn print_data(data: [u8; 8]) {
 fn send_command<T: UsbContext>(handle: &mut DeviceHandle<T>, data: [u8; 8]) -> Result<usize> {
   println!("\tSending command");
   let timeout = Duration::from_millis(constants::SEND_TIMEOUT);
-
-  // const REQUEST_TYPE: u8 = 0x00;
-  // const REQUEST: u8 = 0x09;
-  // const VALUE: u16 = 0x0200;
-  // const INDEX: u16 = 0x0000;
   // Send command
   handle.write_interrupt(constants::ENDPOINT_ADDRESS, &data, timeout)
-  // handle.write_control(REQUEST_TYPE, REQUEST, VALUE, INDEX, &data, timeout)
 }
 
 fn read_interrupt<T: UsbContext>(handle: &mut DeviceHandle<T>) {
