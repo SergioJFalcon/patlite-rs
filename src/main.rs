@@ -13,12 +13,12 @@ struct Endpoint {
 }
 
 fn main() -> Result<()> {
-  println!("************* START *************");
-  let matches: ArgMatches = command!() // requires `cargo` feature
+    println!("************* START *************");
+    let matches: ArgMatches = command!() // requires `cargo` feature
       .version("1.0")
       .about("Patlite NE-SN-USB CLI Tool")
-      // .propagate_version(true)
-      // .subcommand_required(true)
+      .propagate_version(true)
+      .subcommand_required(true)
       .arg_required_else_help(true)
       .subcommand(
         Command::new("lightbuzz")
@@ -54,27 +54,26 @@ fn main() -> Result<()> {
         .about("Set the device to default state")
       )
       .get_matches();
-
-  match matches.subcommand() {
-      Some(("add", sub_matches)) => println!(
-          "'myapp add' was used, name is: {:?}",
-          sub_matches.get_one::<String>("NAME")
-      ),
-      _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
-  }
-    // let args = Cli::parse();
-    // println!("pattern: {:?}", args.command);
-
+    
     let mut context: Context = Context::new()?;
     let (mut device, mut handle) = open_device(&mut context, constants::VENDOR_ID, constants::DEVICE_ID).expect("Failed to open USB device");
+    // check if device exists and hasn't been claimed
+    // if device.is_some() {
+    //     let (device, handle) = device.unwrap();
+    //     if handle.kernel_driver_active(0)? {
 
-    // let command: String = std::env::args().nth(1).expect("Missing command argument");
-    // println!("Command: {}", command);
-    // println!("Color: {}", color);
+    match matches.subcommand() {
+        Some(("add", sub_matches)) => println!(
+            "'myapp add' was used, name is: {:?}",
+            sub_matches.get_one::<String>("NAME")
+        ),
+        _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
+    }
 
-    // print_device_info(&mut handle)?;
 
-    // let endpoints: Vec<Endpoint> = find_readable_endpoints(&mut device)?;
+
+    print_device_info(&mut handle)?;
+    let endpoints: Vec<Endpoint> = find_readable_endpoints(&mut device)?;
     // // println!("Endpoints: {:#?}", endpoints);
     // let endpoint: &Endpoint = endpoints.first().expect("No Configurable endpoint found on device");
     
