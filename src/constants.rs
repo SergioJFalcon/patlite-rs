@@ -67,66 +67,66 @@ pub const SETTING_ON: u8 = 0x1; // ON
 pub const BLANK: u8 = 0x0; // openings
 
 // USB Communication Protocol
-      // 1st byte: Command version
-        // 0x00: fixed
-      // 2nd byte: Command ID
-        // 0x00: Control command
-        // 0x01: Command to switch connection display setting
-      // 3rd byte: Alarm Control
-        // 7th-4th bits: Continuous operation / Number of operations
-          // 0x0: Continuous operation
-          // 0x1 ~ 0xE: Number of operations
-            // 1 to 14 times
-        // 3rd-0th bits: Alarm Pattern
-          // 0x0: Off
-          // 0x1: Continuous
-          // 0x2: Sweep
-          // 0x3: Call Sign
-          // 0x4: Low Urgency
-          // 0x5: High Urgency
-          // 0x6: Twinkle Star (Melody)
-          // 0x7: London Bridge (Melody)
-          // 0x8~0xF: Maintain current status
-      // 4th byte: Alarm volume
-          // 7th-4th bits: Open
-            // 0x0: Fixed
-          // 3rd-0th bits: Volume
-            // 0x0: Silent
-            // 0x1 ~ 0x9: Stepped volume from maximum to silent
-            // 0xA: Maximum volume
-            // 0xB ~ 0xF: Maintain current status
-          // if command ID is 0x1, 0x00: fixed
-      // 5th byte: LED control
-        // 7th-4th bits: Color
-          // 0x0: Off
-          // 0x1: Red
-          // 0x2: Green
-          // 0x3: Yellow
-          // 0x4: Blue
-          // 0x5: Purple
-          // 0x6: Sky Blue
-          // 0x7: White
-          // 0x8 ~ 0xF: Maintain current status
-        // 3rd-0th bits: Pattern
-          // 0x0: Off
-          // 0x1: On
-          // 0x2: Pattern 1
-          // 0x3: Pattern 2
-          // 0x4: Pattern 3
-          // 0x5: Pattern 4
-          // 0x6: Pattern 5
-          // 0x7: Pattern 6
-          // 0x8 ~ 0xF: Maintain current status
-        // if the command ID is 0x01, 0x00: Fixed
-      // 6th, 7th, and 8th byte: Open
-        // 0x00: Fixed
-    
-    // Protocol Example
-      // Red light on, continuous sound
-      // | 0x00 | 0x00 | 0x01 | 0x06 | 0x11 | 0x00 | 0x00 | 0x00 |
+// 1st byte: Command version
+// 0x00: fixed
+// 2nd byte: Command ID
+// 0x00: Control command
+// 0x01: Command to switch connection display setting
+// 3rd byte: Alarm Control
+// 7th-4th bits: Continuous operation / Number of operations
+// 0x0: Continuous operation
+// 0x1 ~ 0xE: Number of operations
+// 1 to 14 times
+// 3rd-0th bits: Alarm Pattern
+// 0x0: Off
+// 0x1: Continuous
+// 0x2: Sweep
+// 0x3: Call Sign
+// 0x4: Low Urgency
+// 0x5: High Urgency
+// 0x6: Twinkle Star (Melody)
+// 0x7: London Bridge (Melody)
+// 0x8~0xF: Maintain current status
+// 4th byte: Alarm volume
+// 7th-4th bits: Open
+// 0x0: Fixed
+// 3rd-0th bits: Volume
+// 0x0: Silent
+// 0x1 ~ 0x9: Stepped volume from maximum to silent
+// 0xA: Maximum volume
+// 0xB ~ 0xF: Maintain current status
+// if command ID is 0x1, 0x00: fixed
+// 5th byte: LED control
+// 7th-4th bits: Color
+// 0x0: Off
+// 0x1: Red
+// 0x2: Green
+// 0x3: Yellow
+// 0x4: Blue
+// 0x5: Purple
+// 0x6: Sky Blue
+// 0x7: White
+// 0x8 ~ 0xF: Maintain current status
+// 3rd-0th bits: Pattern
+// 0x0: Off
+// 0x1: On
+// 0x2: Pattern 1
+// 0x3: Pattern 2
+// 0x4: Pattern 3
+// 0x5: Pattern 4
+// 0x6: Pattern 5
+// 0x7: Pattern 6
+// 0x8 ~ 0xF: Maintain current status
+// if the command ID is 0x01, 0x00: Fixed
+// 6th, 7th, and 8th byte: Open
+// 0x00: Fixed
 
-      // Purple Light on, turn alarm off
-      // | 0x00 | 0x00 | 0x00 | 0x00 | 0x51 | 0x00 | 0x00 | 0x00 |
+// Protocol Example
+// Red light on, continuous sound
+// | 0x00 | 0x00 | 0x01 | 0x06 | 0x11 | 0x00 | 0x00 | 0x00 |
 
-			// Red Light on
-			// | 0x00 | 0x00 | 0x00 | 0x00 | 0x11 | 0x00 | 0x00 | 0x00 |
+// Purple Light on, turn alarm off
+// | 0x00 | 0x00 | 0x00 | 0x00 | 0x51 | 0x00 | 0x00 | 0x00 |
+
+// Red Light on
+// | 0x00 | 0x00 | 0x00 | 0x00 | 0x11 | 0x00 | 0x00 | 0x00 |
