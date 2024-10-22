@@ -18,14 +18,14 @@ pub const ENDPOINT_ADDRESS_GET: u8 = 0x81;
 pub const SEND_TIMEOUT: u64 = 3000;
 
 // LED colors
-// pub const LED_COLOR_OFF: u8 = 0; // Off
-// pub const LED_COLOR_RED: u8 = 1; // Red
-// pub const LED_COLOR_GREEN: u8 = 2; // green
-// pub const LED_COLOR_YELLOW: u8 = 3; // yellow
-// pub const LED_COLOR_BLUE: u8 = 4; // Blue
-// pub const LED_COLOR_PURPLE: u8 = 5; // purple
-// pub const LED_COLOR_LIGHTBLUE: u8 = 6; // Sky blue
-// pub const LED_COLOR_WHITE: u8 = 7; // White
+pub const LED_COLOR_OFF: u8 = 0; // Off
+pub const LED_COLOR_RED: u8 = 1; // Red
+pub const LED_COLOR_GREEN: u8 = 2; // green
+pub const LED_COLOR_YELLOW: u8 = 3; // yellow
+pub const LED_COLOR_BLUE: u8 = 4; // Blue
+pub const LED_COLOR_PURPLE: u8 = 5; // purple
+pub const LED_COLOR_LIGHTBLUE: u8 = 6; // Sky blue
+pub const LED_COLOR_WHITE: u8 = 7; // White
 pub const LED_COLOR_KEEP: u8 = 0xF; // Keep the current settings
 
 // LED pattern

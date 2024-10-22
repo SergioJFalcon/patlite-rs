@@ -1,6 +1,8 @@
 use rusb::{Context, Device, DeviceHandle, Result, UsbContext};
-use std::time::Duration;
+use std::{fmt::Debug, iter, time::Duration};
 use clap::{arg, ArgMatches, command, Command};
+use std::fmt;
+use tabled::{builder::Builder, settings::Style};
 
 mod constants;
 
@@ -25,16 +27,35 @@ enum LEDColors {
   Keep,
 }
 
+// Implementing the Display trait for LEDColors
+impl fmt::Display for LEDColors {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      let color_str = match self {
+          LEDColors::Off => "Off",
+          LEDColors::Red => "Red",
+          LEDColors::Green => "Green",
+          LEDColors::Yellow => "Yellow",
+          LEDColors::Blue => "Blue",
+          LEDColors::Purple => "Purple",
+          LEDColors::LightBlue => "LightBlue",
+          LEDColors::White => "White",
+          LEDColors::Keep => "Keep",
+      };
+      write!(f, "{}", color_str)
+  }
+}
+
 fn get_led_color(color: u8) -> LEDColors {
   match color {
-    0x0 => LEDColors::Off,
-    0x1 => LEDColors::Red,
-    0x2 => LEDColors::Green,
-    0x3 => LEDColors::Yellow,
-    0x4 => LEDColors::Blue,
-    0x5 => LEDColors::Purple,
-    0x6 => LEDColors::LightBlue,
-    0x7 => LEDColors::White,
+    constants::LED_COLOR_OFF => LEDColors::Off,
+    constants::LED_COLOR_RED => LEDColors::Red,
+    constants::LED_COLOR_GREEN => LEDColors::Green,
+    constants::LED_COLOR_YELLOW => LEDColors::Yellow,
+    constants::LED_COLOR_BLUE => LEDColors::Blue,
+    constants::LED_COLOR_PURPLE => LEDColors::Purple,
+    constants::LED_COLOR_LIGHTBLUE => LEDColors::LightBlue,
+    constants::LED_COLOR_WHITE => LEDColors::White,
+    constants::LED_COLOR_KEEP => LEDColors::Keep,
     0x8..=0xF => LEDColors::Keep,
     _ => LEDColors::Off,
   }
@@ -153,8 +174,8 @@ fn main() -> Result<()> {
       .version("1.0")
       .about("Patlite NE-SN-USB CLI Tool")
       .propagate_version(true)
-      .subcommand_required(true)
-      .arg_required_else_help(true)
+      // .subcommand_required(true)
+      // .arg_required_else_help(true)
       .subcommand(
         Command::new("lightbuzz")
         .about("Set light and buzzer")
@@ -240,8 +261,8 @@ fn main() -> Result<()> {
         .after_help("AFTER HELP")
         .arg(
           arg!([CONTROL] "Control to get information on")
-            .value_parser(["color", "led", "buzzer", "volume", "device"])
-            .required(true)
+            .value_parser(["color", "led", "buzzer", "volume", "device", "all"])
+            .required(false)
         )
       )
       .get_matches();
@@ -249,81 +270,147 @@ fn main() -> Result<()> {
 
     match matches.subcommand() {
         Some(("lightbuzz", sub_matches)) => {
-          let color = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
-          let color_pattern = sub_matches.get_one::<u8>("COLORPATTERN").expect("Color Pattern is required");
-          let buzzer_pattern = sub_matches.get_one::<u8>("BUZZERPATTERN").expect("Buzzer Pattern is required");
-          let volume = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
-          let repetition = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
+          let color: &u8 = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
+          let color_pattern: &u8 = sub_matches.get_one::<u8>("COLORPATTERN").expect("Color Pattern is required");
+          let buzzer_pattern: &u8 = sub_matches.get_one::<u8>("BUZZERPATTERN").expect("Buzzer Pattern is required");
+          let volume: &u8 = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
+          let repetition: &u8 = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
 
-          println!("LightBuzz: \n\tColor: {}, \n\tColor Pattern: {}, \n\tBuzzer Pattern: {}, \n\tRepetition: {}, \n\tVolume: {}", color, color_pattern, buzzer_pattern, repetition, volume);
-          let mut handle = setup_device()?;
-
+          let mut handle: DeviceHandle<Context> = setup_device()?;
           set_master_controls_command(&mut handle, color, color_pattern, buzzer_pattern, repetition, volume)?;
-
         },
         Some(("light", sub_matches)) => {
-          let color = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
-          let pattern = sub_matches.get_one::<u8>("PATTERN").expect("Pattern is required");
-          println!("Light: Color: {}, Pattern: {}", color, pattern);
-          let mut handle = setup_device()?;
-
+          let color: &u8 = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
+          let pattern: &u8 = sub_matches.get_one::<u8>("PATTERN").expect("Pattern is required");
+          
+          let mut handle: DeviceHandle<Context> = setup_device()?;
           set_light_command(&mut handle, color, pattern)?;
         },
         Some(("buzz", sub_matches)) => {
-          let buzzer_pattern = sub_matches.get_one::<u8>("PATTERN").expect("Buzzer Pattern is required");
-          let volume = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
-          let repetition = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
+          let buzzer_pattern: &u8 = sub_matches.get_one::<u8>("PATTERN").expect("Buzzer Pattern is required");
+          let volume: &u8 = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
+          let repetition: &u8 = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
 
-          let mut handle = setup_device()?;
+          let mut handle: DeviceHandle<Context> = setup_device()?;
           set_buzz_command(&mut handle, buzzer_pattern, repetition, volume)?;
         },
         Some(("volume", sub_matches)) => {
-          let level = sub_matches.get_one::<u8>("LEVEL").expect("Level is required");
-          println!("Volume: Level: {}", level);
-
-          let mut handle = setup_device()?;
+          let level: &u8 = sub_matches.get_one::<u8>("LEVEL").expect("Level is required");
+          
+          let mut handle: DeviceHandle<Context> = setup_device()?;
           set_volume_command(&mut handle, level)?;
         },
         Some(("state", _)) => {
-          println!("State");
-          let mut handle = setup_device()?;
+          let mut handle: DeviceHandle<Context> = setup_device()?;
           get_settings(&mut handle)?;
         },
         Some(("Off", _)) => {
-          println!("Off");
-          let mut handle = setup_device()?;
+          let mut handle: DeviceHandle<Context> = setup_device()?;
           set_blank(&mut handle)?;
         },
         Some(("info", sub_matches)) => {
-          println!("Info");
-          let control = sub_matches.get_one::<String>("CONTROL").expect("Control type is required");
-          // TODO: Implement this
+          let control: &String = sub_matches.get_one::<String>("CONTROL").expect("Control type is required");
+          let mut builder: Builder = Builder::new();
+
           match control.as_str() {
             "color" => {
-              println!("Color:");
-              (0..8).for_each(|i: u8| {
-                println!("\t {:#?}: {:?}", get_led_color(i), i);
-              });
-              println!("\t Keep: 0xF");
+              builder.push_record(["Color", "Value"]);
+              builder.push_record(["Off", "0"]);
+              builder.push_record(["Red", "1"]);
+              builder.push_record(["Green", "2"]);
+              builder.push_record(["Yellow", "3"]);
+              builder.push_record(["Blue", "4"]);
+              builder.push_record(["Purple", "5"]);
+              builder.push_record(["Sky Blue", "6"]);
+              builder.push_record(["White", "7"]);
+              builder.push_record(["Keep", "8 - 15"]);
+              let table: String = builder
+                .build()
+                .with(Style::rounded())
+                .to_string();
+              println!("{}", table);
             },
             "led" => {
-              println!("LED");
+              builder.push_record(["LED Pattern", "Value"]);
+              builder.push_record(["Off", "0"]);
+              builder.push_record(["On", "1"]);
+              builder.push_record(["Pattern 1", "2"]);
+              builder.push_record(["Pattern 2", "3"]);
+              builder.push_record(["Pattern 3", "4"]);
+              builder.push_record(["Pattern 4", "5"]);
+              builder.push_record(["Pattern 5", "6"]);
+              builder.push_record(["Pattern 6", "7"]);
+              builder.push_record(["Keep", "8 - 15"]);
+              let table: String = builder
+                .build()
+                .with(Style::rounded())
+                .to_string();
+              println!("{}", table);
             },
             "buzzer" => {
-              println!("Buzzer");
+              builder.push_record(["Buzzer Pattern", "Value"]);
+              builder.push_record(["Off", "0"]);
+              builder.push_record(["Continuously On", "1"]);
+              builder.push_record(["Sweep", "2"]);
+              builder.push_record(["Intermittent", "3"]);
+              builder.push_record(["Weak Attention", "4"]);
+              builder.push_record(["Strong Attention", "5"]);
+              builder.push_record(["Shining Star Melody", "6"]);
+              builder.push_record(["London Bridge Melody", "7"]);
+              builder.push_record(["Keep", "8 - 15"]);
+              let table: String = builder
+                .build()
+                .with(Style::rounded())
+                .to_string();
+              println!("{}", table);
             },
             "volume" => {
-              println!("Volume");
+              builder.push_record(["Volume Level", "Value"]);
+              builder.push_record(["Silent", "0"]);
+              builder.push_record(["1", "1"]);
+              builder.push_record(["2", "2"]);
+              builder.push_record(["3", "3"]);
+              builder.push_record(["4", "4"]);
+              builder.push_record(["5", "5"]);
+              builder.push_record(["6", "6"]);
+              builder.push_record(["7", "7"]);
+              builder.push_record(["8", "8"]);
+              builder.push_record(["9", "9"]);
+              builder.push_record(["Max", "10"]);
+              builder.push_record(["Keep", "11 - 15"]);
+              let table: String = builder
+                .build()
+                .with(Style::rounded())
+                .to_string();
+              println!("{}", table);
             },
             "device" => {
-              println!("Device");
-              let mut handle = setup_device()?;
-              print_device_info(&mut handle)?;
-            }
+              let mut handle: DeviceHandle<Context> = setup_device()?;
+              print_device_info(&mut handle, &mut builder)?;
+            },
+            "all" => {
+              builder.push_record(["Color", "Value", "LED Pattern", "Value", "Buzzer Pattern", "Value", "Volume Level", "Value"]);
+              builder.push_record(["Off", "0", "Off", "0", "Off", "0", "Silent", "0"]);
+              builder.push_record(["Red", "1", "On", "1", "Continuously On", "1", "1", "1"]);
+              builder.push_record(["Green", "2", "Pattern 1", "2", "Sweep", "2", "2", "2"]);
+              builder.push_record(["Yellow", "3", "Pattern 2", "3", "Intermittent", "3", "3", "3"]);
+              builder.push_record(["Blue", "4", "Pattern 3", "4", "Weak Attention", "4", "4", "4"]);
+              builder.push_record(["Purple", "5", "Pattern 4", "5", "Strong Attention", "5", "5", "5"]);
+              builder.push_record(["Sky Blue", "6", "Pattern 5", "6", "Shining Star Melody", "6", "6", "6"]);
+              builder.push_record(["White", "7", "Pattern 6", "7", "London Bridge Melody", "7", "7", "7"]);
+              builder.push_record(["Keep", "8 - 15", "Keep", "8 - 15", "Keep", "8 - 15", "Keep", "8 - 15"]);
+              let table: String = builder
+                .build()
+                .with(Style::rounded())
+                .to_string();
+              println!("{}", table);
+            },
             _ => println!("Invalid control type"),
           }
         },
-        _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
+        _ => {
+          unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`")
+        },
     }
 
 
@@ -356,11 +443,11 @@ fn setup_device() -> Result<DeviceHandle<rusb::Context>> {
     }
   };
   
-  println!("Endpoints: {:#?}", endpoints);
+  // println!("Endpoints: {:#?}", endpoints);
   let endpoint: &Endpoint = endpoints.first().expect("No Configurable endpoint found on device");
   // get endpoint with address 0x01
   // let endpoint = endpoints.iter().find(|e| e.address == constants::ENDPOINT_ADDRESS_GET).expect("No Configurable endpoint found on device");
-  println!("Endpoint: {:#?}", endpoint);
+  // println!("Endpoint: {:#?}", endpoint);
   // claim and configure device
   let _endpoint_config = match configure_endpoint(&mut handle, endpoint) {
     Ok(_) => println!("Endpoint configured successfully"),
@@ -396,35 +483,33 @@ fn open_device<T: UsbContext>(context: &mut T, vid: u16, pid: u16) -> Option<(De
     None
 }
 
-fn print_device_info<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<()> {
+fn print_device_info<T: UsbContext>(handle: &mut DeviceHandle<T>, table_builder: &mut Builder) -> Result<()> {
     let device_desc = handle.device().device_descriptor()?;
     let timeout = Duration::from_secs(1);
     let languages = handle.read_languages(timeout)?;
 
-    println!("Active configuration: {}", handle.active_configuration()?);
+    // println!("Active configuration: {}", handle.active_configuration()?);
 
     if !languages.is_empty() {
-        let language = languages[0];
-        println!("Language: {:?}", language);
-
-        println!(
-            "Manufacturer: {}",
+        let language: rusb::Language = languages[0];
+        table_builder.push_record(["Language", "Manufacturer", "Product", "Serial Number"]);
+        table_builder.push_record([
+            format!("{:?}", language),
             handle
                 .read_manufacturer_string(language, &device_desc, timeout)
-                .unwrap_or("Not Found".to_string())
-        );
-        println!(
-            "Product: {}",
+                .unwrap_or("Not Found".to_string()),
             handle
                 .read_product_string(language, &device_desc, timeout)
-                .unwrap_or("Not Found".to_string())
-        );
-        println!(
-            "Serial Number: {}",
+                .unwrap_or("Not Found".to_string()),
             handle
                 .read_serial_number_string(language, &device_desc, timeout)
-                .unwrap_or("Not Found".to_string())
-        );
+                .unwrap_or("Not Found".to_string()),
+        ]);
+        let table: String = table_builder.clone()
+          .build()
+          .with(Style::rounded())
+          .to_string();
+        println!("{}", table);
     }
     Ok(())
 }
@@ -434,7 +519,7 @@ fn find_readable_endpoints<T: UsbContext>(device: &mut Device<T>) -> Result<Vec<
   let mut endpoints = vec![];
 
   for n in 0..device_desc.num_configurations() {
-    println!("Configuration: {}", n);
+    // println!("Configuration: {}", n);
     let config_desc = match device.config_descriptor(n) {
       Ok(c) => c,
       Err(_) => continue, // Skip on error
@@ -456,7 +541,7 @@ fn find_readable_endpoints<T: UsbContext>(device: &mut Device<T>) -> Result<Vec<
       }
     }
   }
-  println!("\nFound {} endpoints", endpoints.len());
+  // println!("\nFound {} endpoints", endpoints.len());
 
   Ok(endpoints)
 }
@@ -467,21 +552,7 @@ fn configure_endpoint<T: UsbContext>(handle: &mut DeviceHandle<T>, endpoint: &En
   handle.set_alternate_setting(endpoint.iface, endpoint.setting)
 }
 
-fn print_data(data: [u8; 8]) {
-  let byte1: u8 = data[0];
-  let byte2: u8 = data[1];
-  let byte3: u8 = data[2];
-  let byte4: u8 = data[3];
-  let byte5: u8 = data[4];
-  let byte6: u8 = data[5];
-  let byte7: u8 = data[6];
-  let byte8: u8 = data[7];
-  println!("Complete Bytes: {:?}", data);
-  println!("Data: |{} {}|{} {}|{} {}|{} {}|", byte1, byte2, byte3, byte4, byte5, byte6, byte7, byte8);
-}
-
 fn send_command<T: UsbContext>(handle: &mut DeviceHandle<T>, data: Data) -> Result<usize> {
-  println!("\tSending command");
   let timeout = Duration::from_millis(constants::SEND_TIMEOUT);
   // Send command
   handle.write_interrupt(constants::ENDPOINT_ADDRESS, &data.to_array(), timeout)
@@ -505,7 +576,6 @@ fn set_master_controls_command(handle: &mut DeviceHandle<rusb::Context>, color: 
   master_controls.set_led_control(led_control);
   master_controls.set_volume(*volume);
 
-  println!("Master Controls: {:?}", master_controls.to_array());
   match send_command(handle, master_controls) {
     Ok(u) => println!("Command sent successfully: {:?}", u),
     Err(e) => {
@@ -519,26 +589,10 @@ fn set_master_controls_command(handle: &mut DeviceHandle<rusb::Context>, color: 
 
 fn set_light_command(handle: &mut DeviceHandle<rusb::Context>, color: &u8, pattern: &u8) -> Result<bool> {
   // Ensure color is in the range 0-15 (4 bits) and pattern is in the range 0-15 (4 bits)
-  let buzzer_control: u8 = constants::BUZZER_COUNT_KEEP << 4 | constants::BUZZER_KEEP;
-  let led_control: u8 = (color & 0x0F) << 4 | (pattern & 0x0F); // Combine color and pattern into a single byte
-  // let red_on: [u8; 8] = [ 0x00, 0x00, 0x10, 0x00, 0x11, 0x00, 0x00, 0x00 ]; // Continous red light example
-  println!("buzzer_control: {}", buzzer_control);
-  println!("led_control: {}", led_control);
-
-  // let light_data: [u8; 8] = [
-  //   constants::COMMAND_VERSION, // Command version
-  //   constants::COMMAND_ID_CONTROL, // Command ID
-  //   buzzer_control, // Alarm Control if commandId is 0, if commandId is 1, then its Setting
-  //   constants::BUZZER_VOLUME_KEEP, // Buzzer volume
-  //   led_control, // LED Control
-  //   constants::BLANK, // Reserved
-  //   constants::BLANK, // Reserved
-  //   constants::BLANK, // Reserved
-  // ];
   let mut light_data: Data = Data::default();
+  let led_control: u8 = (color & 0x0F) << 4 | (pattern & 0x0F); // Combine color and pattern into a single byte
   light_data.set_led_control(led_control);
 
-  println!("Light Data: {:?}", light_data.to_array());
   match send_command(handle, light_data) {
     Ok(u) => println!("Command sent successfully: {:?}", u),
     Err(e) => {
@@ -551,18 +605,9 @@ fn set_light_command(handle: &mut DeviceHandle<rusb::Context>, color: &u8, patte
 
 fn set_buzz_command(handle: &mut DeviceHandle<rusb::Context>, pattern: &u8, repetition: &u8, volume: &u8) -> Result<bool> {
   // Specify the buzzer pattern, number of times to repeat the buzzer, and the volume
-  // let buzz_data: [u8; 8] = [
-  //   constants::COMMAND_VERSION, // Command version
-  //   constants::COMMAND_ID_CONTROL, // Command ID
-  //   constants::LED_COLOR_KEEP, // LED color
-  //   constants::LED_PATTERN_KEEP, // LED pattern
-  //   repetition, // Number of buzzers
-  //   pattern, // Buzzer pattern
-  //   volume, // Buzzer volume
-  //   constants::BLANK, // Reserved
-  // ];
   let mut buzz_data: Data = Data::default();
-  buzz_data.set_alarm_control(repetition << 4 | pattern);
+  let buzz_control: u8 = (repetition & 0x0F) << 4 | (pattern & 0x0F);
+  buzz_data.set_alarm_control(buzz_control);
   buzz_data.set_volume(*volume);
 
   match send_command(handle, buzz_data) {
@@ -577,7 +622,6 @@ fn set_buzz_command(handle: &mut DeviceHandle<rusb::Context>, pattern: &u8, repe
 
 fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
     // Turn off the light, buzzer, and volume to off
-    // let off: [u8; 8] = [ constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK ]; // Off example
     let blank_data: Data = Data::blank();
 
     match send_command(handle, blank_data) {
@@ -593,7 +637,6 @@ fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 
 fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
   // Get the current settings of the device
-  // let get_settings: [u8; 8] = [ constants::COMMAND_VERSION, constants::COMMAND_ID_SETTING, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK ]; // Get settings example
   let get_settings: Data = Data::settings();
 
   match send_command(handle, get_settings) {
@@ -609,7 +652,6 @@ fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 
 fn set_volume_command(handle: &mut DeviceHandle<rusb::Context>, volume: &u8) -> Result<bool> {
   // Set the volume level of the buzzer
-  // let set_volume: [u8; 8] = [ constants::COMMAND_VERSION, constants::COMMAND_ID_CONTROL, constants::BLANK, constants::BUZZER_VOLUME_MAX, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK ]; // Set volume example
   let mut set_volume: Data = Data::default();
   set_volume.set_volume(*volume);
 
