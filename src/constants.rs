@@ -8,7 +8,7 @@ pub const COMMAND_VERSION: u8 = 0x0;
 // Command ID
 pub const COMMAND_ID_CONTROL: u8 = 0x0;
 pub const COMMAND_ID_SETTING: u8 = 0x1;
-pub const COMMAND_ID_GETSTATE: u8 = 0x80;
+// pub const COMMAND_ID_GETSTATE: u8 = 0x80;
 
 // Endpoint address for sending to host -> USB controlled multicolor indicator
 pub const ENDPOINT_ADDRESS: u8 = 0x01;
@@ -18,49 +18,49 @@ pub const ENDPOINT_ADDRESS_GET: u8 = 0x81;
 pub const SEND_TIMEOUT: u64 = 3000;
 
 // LED colors
-pub const LED_COLOR_OFF: u8 = 0; // Off
-pub const LED_COLOR_RED: u8 = 1; // Red
-pub const LED_COLOR_GREEN: u8 = 2; // green
-pub const LED_COLOR_YELLOW: u8 = 3; // yellow
-pub const LED_COLOR_BLUE: u8 = 4; // Blue
-pub const LED_COLOR_PURPLE: u8 = 5; // purple
-pub const LED_COLOR_LIGHTBLUE: u8 = 6; // Sky blue
-pub const LED_COLOR_WHITE: u8 = 7; // White
+// pub const LED_COLOR_OFF: u8 = 0; // Off
+// pub const LED_COLOR_RED: u8 = 1; // Red
+// pub const LED_COLOR_GREEN: u8 = 2; // green
+// pub const LED_COLOR_YELLOW: u8 = 3; // yellow
+// pub const LED_COLOR_BLUE: u8 = 4; // Blue
+// pub const LED_COLOR_PURPLE: u8 = 5; // purple
+// pub const LED_COLOR_LIGHTBLUE: u8 = 6; // Sky blue
+// pub const LED_COLOR_WHITE: u8 = 7; // White
 pub const LED_COLOR_KEEP: u8 = 0xF; // Keep the current settings
 
 // LED pattern
-pub const LED_OFF: u8 = 0x0; // Off
-pub const LED_ON: u8 = 0x1; // On
-pub const LED_PATTERN1: u8 = 0x2; // LED pattern1
-pub const LED_PATTERN2: u8 = 0x3; // LED pattern2
-pub const LED_PATTERN3: u8 = 0x4; // LED pattern3
-pub const LED_PATTERN4: u8 = 0x5; // LED pattern4
-pub const LED_PATTERN5: u8 = 0x6; // LED pattern5
-pub const LED_PATTERN6: u8 = 0x7; // LED pattern6
+// pub const LED_OFF: u8 = 0x0; // Off
+// pub const LED_ON: u8 = 0x1; // On
+// pub const LED_PATTERN1: u8 = 0x2; // LED pattern1
+// pub const LED_PATTERN2: u8 = 0x3; // LED pattern2
+// pub const LED_PATTERN3: u8 = 0x4; // LED pattern3
+// pub const LED_PATTERN4: u8 = 0x5; // LED pattern4
+// pub const LED_PATTERN5: u8 = 0x6; // LED pattern5
+// pub const LED_PATTERN6: u8 = 0x7; // LED pattern6
 pub const LED_PATTERN_KEEP: u8 = 0xF; // Keep the current settings
 
 // Number of buzzers
-pub const BUZZER_COUNT_CONTINUE: u8 = 0x0; // Continuous operation
+// pub const BUZZER_COUNT_CONTINUE: u8 = 0x0; // Continuous operation
 pub const BUZZER_COUNT_KEEP: u8 = 0xF; // Keep the current settings
 
 // Buzzer pattern
-pub const BUZZER_OFF: u8 = 0x0; // Stop
-pub const BUZZER_ON: u8 = 0x1; // Blow (continuous)
-pub const BUZZER_SWEEP: u8 = 0x2; // Sweep sound
-pub const BUZZER_INTERMITTENT: u8 = 0x3; // Intermittent sound
-pub const BUZZER_WEEK_ATTENTION: u8 = 0x4; // Weak caution sound
-pub const BUZZER_STRONG_ATTENTION: u8 = 0x5; // Strong attention sound
-pub const BUZZER_SHINING_STAR: u8 = 0x6; // shining star
-pub const BUZZER_LONDON_BRIDGE: u8 = 0x7; // London bridge
+// pub const BUZZER_OFF: u8 = 0x0; // Stop
+// pub const BUZZER_ON: u8 = 0x1; // Blow (continuous)
+// pub const BUZZER_SWEEP: u8 = 0x2; // Sweep sound
+// pub const BUZZER_INTERMITTENT: u8 = 0x3; // Intermittent sound
+// pub const BUZZER_WEEK_ATTENTION: u8 = 0x4; // Weak caution sound
+// pub const BUZZER_STRONG_ATTENTION: u8 = 0x5; // Strong attention sound
+// pub const BUZZER_SHINING_STAR: u8 = 0x6; // shining star
+// pub const BUZZER_LONDON_BRIDGE: u8 = 0x7; // London bridge
 pub const BUZZER_KEEP: u8 = 0xF; // Keep the current settings
 
 // Buzzer volume
-pub const BUZZER_VOLUME_OFF: u8 = 0x0; // Mute
-pub const BUZZER_VOLUME_MAX: u8 = 0xA; // Maximum volume
+// pub const BUZZER_VOLUME_OFF: u8 = 0x0; // Mute
+// pub const BUZZER_VOLUME_MAX: u8 = 0xA; // Maximum volume
 pub const BUZZER_VOLUME_KEEP: u8 = 0xF; // Keep the current settings
 
 // Setting
-pub const SETTING_OFF: u8 = 0x0; // OFF
+// pub const SETTING_OFF: u8 = 0x0; // OFF
 pub const SETTING_ON: u8 = 0x1; // ON
 
 // others

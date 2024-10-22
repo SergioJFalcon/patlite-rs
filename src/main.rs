@@ -1,5 +1,5 @@
 use rusb::{Context, Device, DeviceHandle, Result, UsbContext};
-use std::{env::Args, time::Duration};
+use std::time::Duration;
 use clap::{arg, ArgMatches, command, Command};
 
 mod constants;
@@ -10,6 +10,34 @@ struct Endpoint {
   iface: u8,
   setting: u8,
   address: u8,
+}
+
+#[derive(Debug)]
+enum LEDColors {
+  Off,
+  Red,
+  Green,
+  Yellow,
+  Blue,
+  Purple,
+  LightBlue,
+  White,
+  Keep,
+}
+
+fn get_led_color(color: u8) -> LEDColors {
+  match color {
+    0x0 => LEDColors::Off,
+    0x1 => LEDColors::Red,
+    0x2 => LEDColors::Green,
+    0x3 => LEDColors::Yellow,
+    0x4 => LEDColors::Blue,
+    0x5 => LEDColors::Purple,
+    0x6 => LEDColors::LightBlue,
+    0x7 => LEDColors::White,
+    0x8..=0xF => LEDColors::Keep,
+    _ => LEDColors::Off,
+  }
 }
 
 struct Data {
@@ -73,11 +101,33 @@ trait Setters {
   fn set_alarm_control(&mut self, alarm_control: u8);
   fn set_volume(&mut self, volume: u8);
 }
+impl Setters for Data {
+  fn set_alarm_control(&mut self, alarm_control: u8) {
+    self.alarm_control = alarm_control;
+  }
+  fn set_led_control(&mut self, led_control: u8) {
+    self.led_control = led_control;
+  }
+  fn set_volume(&mut self, volume: u8) {
+    self.volume = volume;
+  }
+}
 
 trait Getters {
   fn get_led_control(&self) -> u8;
   fn get_alarm_control(&self) -> u8;
   fn get_volume(&self) -> u8;
+}
+impl Getters for Data {
+   fn get_alarm_control(&self) -> u8 {
+    self.alarm_control
+   }
+    fn get_led_control(&self) -> u8 {
+      self.led_control
+    }
+    fn get_volume(&self) -> u8 {
+      self.volume
+    }
 }
 
 trait Transform {
@@ -98,20 +148,7 @@ impl Transform for Data {
   }
 }
 
-impl Setters for Data {
-  fn set_alarm_control(&mut self, alarm_control: u8) {
-    self.alarm_control = alarm_control;
-  }
-  fn set_led_control(&mut self, led_control: u8) {
-    self.led_control = led_control;
-  }
-  fn set_volume(&mut self, volume: u8) {
-    self.volume = volume;
-  }
-}
-
 fn main() -> Result<()> {
-    println!("************* START *************");
     let matches: ArgMatches = command!() // requires `cargo` feature
       .version("1.0")
       .about("Patlite NE-SN-USB CLI Tool")
@@ -194,21 +231,21 @@ fn main() -> Result<()> {
         .about("Get the current state of the device")
       )
       .subcommand(
-        Command::new("Off")
+        Command::new("off")
         .about("Set the device to default state")
       )
       .subcommand(
         Command::new("info")
         .about("Get information on available colors, led patterns, buzzer patterns, and volume levels")
+        .after_help("AFTER HELP")
+        .arg(
+          arg!([CONTROL] "Control to get information on")
+            .value_parser(["color", "led", "buzzer", "volume", "device"])
+            .required(true)
+        )
       )
       .get_matches();
     
-    let mut context: Context = Context::new()?;
-    let (mut device, mut handle) = open_device(&mut context, constants::VENDOR_ID, constants::DEVICE_ID).expect("Failed to open USB device");
-    // check if device exists and hasn't been claimed
-    // if device.is_some() {
-    //     let (device, handle) = device.unwrap();
-    //     if handle.kernel_driver_active(0)? {
 
     match matches.subcommand() {
         Some(("lightbuzz", sub_matches)) => {
@@ -219,12 +256,16 @@ fn main() -> Result<()> {
           let repetition = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
 
           println!("LightBuzz: \n\tColor: {}, \n\tColor Pattern: {}, \n\tBuzzer Pattern: {}, \n\tRepetition: {}, \n\tVolume: {}", color, color_pattern, buzzer_pattern, repetition, volume);
-          set_master_controls_command(&mut handle, color, color_pattern, buzzer_pattern, repetition, volume)?;        
+          let mut handle = setup_device()?;
+
+          set_master_controls_command(&mut handle, color, color_pattern, buzzer_pattern, repetition, volume)?;
+
         },
         Some(("light", sub_matches)) => {
           let color = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
           let pattern = sub_matches.get_one::<u8>("PATTERN").expect("Pattern is required");
           println!("Light: Color: {}, Pattern: {}", color, pattern);
+          let mut handle = setup_device()?;
 
           set_light_command(&mut handle, color, pattern)?;
         },
@@ -233,80 +274,103 @@ fn main() -> Result<()> {
           let volume = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
           let repetition = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
 
+          let mut handle = setup_device()?;
           set_buzz_command(&mut handle, buzzer_pattern, repetition, volume)?;
         },
         Some(("volume", sub_matches)) => {
-            let level = sub_matches.get_one::<u8>("LEVEL").expect("Level is required");
-            println!("Volume: Level: {}", level);
+          let level = sub_matches.get_one::<u8>("LEVEL").expect("Level is required");
+          println!("Volume: Level: {}", level);
 
-            set_volume_command(&mut handle, level)?;
+          let mut handle = setup_device()?;
+          set_volume_command(&mut handle, level)?;
         },
         Some(("state", _)) => {
-            println!("State");
-            get_settings(&mut handle)?;
+          println!("State");
+          let mut handle = setup_device()?;
+          get_settings(&mut handle)?;
         },
         Some(("Off", _)) => {
-            println!("Off");
-            set_blank(&mut handle)?;
+          println!("Off");
+          let mut handle = setup_device()?;
+          set_blank(&mut handle)?;
         },
-        Some(("info", _)) => {
-            println!("Info");
-            // TODO: Implement this
+        Some(("info", sub_matches)) => {
+          println!("Info");
+          let control = sub_matches.get_one::<String>("CONTROL").expect("Control type is required");
+          // TODO: Implement this
+          match control.as_str() {
+            "color" => {
+              println!("Color:");
+              (0..8).for_each(|i: u8| {
+                println!("\t {:#?}: {:?}", get_led_color(i), i);
+              });
+              println!("\t Keep: 0xF");
+            },
+            "led" => {
+              println!("LED");
+            },
+            "buzzer" => {
+              println!("Buzzer");
+            },
+            "volume" => {
+              println!("Volume");
+            },
+            "device" => {
+              println!("Device");
+              let mut handle = setup_device()?;
+              print_device_info(&mut handle)?;
+            }
+            _ => println!("Invalid control type"),
+          }
         },
         _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
     }
 
 
-
-    print_device_info(&mut handle)?;
-    let endpoints: Vec<Endpoint> = find_readable_endpoints(&mut device)?;
-    // // println!("Endpoints: {:#?}", endpoints);
-    // let endpoint: &Endpoint = endpoints.first().expect("No Configurable endpoint found on device");
     
-    // // get endpoint with address 0x01
-    // // let endpoint = endpoints.iter().find(|e| e.address == constants::ENDPOINT_ADDRESS_GET).expect("No Configurable endpoint found on device");
-    // println!("Endpoint: {:#?}", endpoint);
-    // // claim and configure device
-    // configure_endpoint(&mut handle, endpoint)?;
-    // // control device here
-
-    // let red_on: [u8; 8] = [ 0x00, 0x00, 0x10, 0x00, 0x11, 0x00, 0x00, 0x00 ]; // Continous red light example
-    // println!("\nSending command to turn light to red");
-    // match send_command(&mut handle, red_on) {
-    //   Ok(u) => println!("Command sent successfully: {:?}", u),
-    //   Err(e) => println!("Failed to send command: {:?}", e),
-    // }
-
-    // // wait for 3 seconds
-    // std::thread::sleep(Duration::from_secs(2));
-    // // read_interrupt(&mut handle);
-    
-    // let purple_on: [u8; 8] = [ 0x00, 0x00, 0x10, 0x00, 0x51, 0x00, 0x00, 0x00 ]; // Continous red light example
-    // print_data(purple_on);
-
-    // println!("\nSending command to turn light to purple");
-    // match send_command(&mut handle, purple_on) {
-    //   Ok(u) => println!("Command sent successfully: {:?}", u),
-    //   Err(e) => println!("Failed to send command: {:?}", e),
-    // }
-
-    // // wait for 3 seconds
-    // std::thread::sleep(Duration::from_secs(2));
-    
-    // println!("\nSending command to turn off light");
-    // let off: [u8; 8] = [ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ]; // Off example
-    // match send_command(&mut handle, off) {
-    //   Ok(u) => println!("Command sent successfully: {:?}", u),
-    //   Err(e) => println!("Failed to send command: {:?}", e),
-    // }
-
-    // println!("Completed command");
-
-    // println!("\n\n\n******Releasing device******\n");
-    // // cleanup after use
-    // // handle.release_interface(endpoint.iface)?;
+    // cleanup after use
+    // handle.release_interface(endpoint.iface)?;
     println!("Completed!~");
     Ok(())
+}
+
+fn setup_device() -> Result<DeviceHandle<rusb::Context>> {
+  let mut context: Context = match Context::new() {
+    Ok(c) => c,
+    Err(_) => {
+      println!("Failed to create USB context");
+      return Err(rusb::Error::NotFound);
+    }
+  };
+  let (mut device, mut handle) = open_device(&mut context, constants::VENDOR_ID, constants::DEVICE_ID).expect("Failed to open USB device");
+  // check if device exists and hasn't been claimed
+  // if device.is_some() {
+  //     let (device, handle) = device.unwrap();
+  //     if handle.kernel_driver_active(0)? {
+  
+  let endpoints: Vec<Endpoint> = match find_readable_endpoints(&mut device) {
+    Ok(endpoints) => endpoints,
+    Err(e) => {
+      println!("Failed to find readable endpoints: {:?}", e);
+      return Err(rusb::Error::NotFound);
+    }
+  };
+  
+  println!("Endpoints: {:#?}", endpoints);
+  let endpoint: &Endpoint = endpoints.first().expect("No Configurable endpoint found on device");
+  // get endpoint with address 0x01
+  // let endpoint = endpoints.iter().find(|e| e.address == constants::ENDPOINT_ADDRESS_GET).expect("No Configurable endpoint found on device");
+  println!("Endpoint: {:#?}", endpoint);
+  // claim and configure device
+  let _endpoint_config = match configure_endpoint(&mut handle, endpoint) {
+    Ok(_) => println!("Endpoint configured successfully"),
+    Err(e) => {
+      println!("Failed to configure endpoint: {:?}", e);
+      return Err(rusb::Error::NotFound);
+    }
+  };
+  
+  Ok(handle)
 }
 
 fn open_device<T: UsbContext>(context: &mut T, vid: u16, pid: u16) -> Option<(Device<T>, DeviceHandle<T>)> {
