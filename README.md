@@ -1,6 +1,19 @@
 # WORK IN PROGRESS
 
-## How to use
+    Only supports device model NE-SN-USB currently to turn on the light, have it buzz, change the volume level, and set light strobing patterns
+
+## How to use CLI
+
+    For now: 
+        git clone
+        cargo build
+    
+    Example use: Turn on the LED light to red continuously
+        .\patlite-rs light 1 1
+
+    For help using the CLI use the helper arg -h or --help
+
+        .\patlite-rs --help
 
 ## Documentations
 
