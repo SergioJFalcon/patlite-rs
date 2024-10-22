@@ -12,6 +12,104 @@ struct Endpoint {
   address: u8,
 }
 
+struct Data {
+  command_version: u8,
+  command_id: u8,
+  alarm_control: u8,
+  volume: u8,
+  led_control: u8,
+  reserved_first: u8,
+  reserved_second: u8,
+  reserved_third: u8,
+}
+
+trait States {
+  fn blank() -> Self;
+  fn default() -> Self;
+  fn settings() -> Self;
+}
+
+impl States for Data {
+  fn default() -> Self {
+    Data {
+      command_version: constants::COMMAND_VERSION,
+      command_id: constants::COMMAND_ID_CONTROL,
+      alarm_control: constants::BUZZER_COUNT_KEEP << 4 | constants::BUZZER_KEEP,
+      volume: constants::BUZZER_VOLUME_KEEP,
+      led_control: constants::LED_COLOR_KEEP << 4 | constants::LED_PATTERN_KEEP,
+      reserved_first: constants::BLANK,
+      reserved_second: constants::BLANK,
+      reserved_third: constants::BLANK,
+    }
+  }
+  fn blank() -> Self {
+    Data {
+      command_version: constants::COMMAND_VERSION,
+      command_id: constants::COMMAND_ID_CONTROL,
+      alarm_control: constants::BLANK,
+      volume: constants::BLANK,
+      led_control: constants::BLANK,
+      reserved_first: constants::BLANK,
+      reserved_second: constants::BLANK,
+      reserved_third: constants::BLANK,
+    }
+  }
+  fn settings() -> Self {
+    Data {
+      command_version: constants::COMMAND_VERSION,
+      command_id: constants::COMMAND_ID_SETTING,
+      alarm_control: constants::SETTING_ON, // or constants::SETTING_OFF
+      volume: constants::BLANK,
+      led_control: constants::BLANK,
+      reserved_first: constants::BLANK,
+      reserved_second: constants::BLANK,
+      reserved_third: constants::BLANK,
+    }
+  }
+}
+
+trait Setters {
+  fn set_led_control(&mut self, led_control: u8);
+  fn set_alarm_control(&mut self, alarm_control: u8);
+  fn set_volume(&mut self, volume: u8);
+}
+
+trait Getters {
+  fn get_led_control(&self) -> u8;
+  fn get_alarm_control(&self) -> u8;
+  fn get_volume(&self) -> u8;
+}
+
+trait Transform {
+  fn to_array(&self) -> [u8; 8];
+}
+impl Transform for Data {
+  fn to_array(&self) -> [u8; 8] {
+    [
+      self.command_version,
+      self.command_id,
+      self.alarm_control,
+      self.volume,
+      self.led_control,
+      self.reserved_first,
+      self.reserved_second,
+      self.reserved_third,
+    ]
+  }
+}
+
+impl Setters for Data {
+  fn set_alarm_control(&mut self, alarm_control: u8) {
+    self.alarm_control = alarm_control;
+  }
+  fn set_led_control(&mut self, led_control: u8) {
+    self.led_control = led_control;
+  }
+  fn set_volume(&mut self, volume: u8) {
+    self.volume = volume;
+  }
+}
+
 fn main() -> Result<()> {
     println!("************* START *************");
     let matches: ArgMatches = command!() // requires `cargo` feature
@@ -23,35 +121,85 @@ fn main() -> Result<()> {
       .subcommand(
         Command::new("lightbuzz")
         .about("Set light and buzzer")
-        .arg(arg!([COLOR]))
-        .arg(arg!([COLORPATTERN]))
-        .arg(arg!([BUZZERPATTERN]))
-        .arg(arg!([VOLUME]))
-        .arg(arg!([REPETITION])),
+        .arg(
+          arg!([COLOR] "Color to set the light to")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        )
+        .arg(
+          arg!([COLORPATTERN] "Pattern to set the light to")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        )
+        .arg(
+          arg!([BUZZERPATTERN] "Pattern to set the buzzer to")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        )
+        .arg(
+          arg!([REPETITION] "Number of times to repeat the buzzer")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        )
+        .arg(
+          arg!([VOLUME] "Volume level to set the buzzer to")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        )
       )
       .subcommand(
     Command::new("light")
         .about("Light control")
-        .arg(arg!([COLOR]))
-        .arg(arg!([PATTERN])),
+        .arg(
+          arg!([COLOR] "Color to set the light to")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        )
+        .arg(
+          arg!([PATTERN] "Pattern to set the light to")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        ),
       )
       .subcommand(
         Command::new("buzz")
         .about("Create a buzzer")
-        .arg(arg!([NAME])),
+        .arg(
+          arg!([PATTERN] "Pattern to set the buzz to")
+          .value_parser(clap::value_parser!(u8).range(0..16))
+          .default_value("0")
+        )
+        .arg(
+          arg!([REPETITION] "Number of times to repeat the buzz")
+          .value_parser(clap::value_parser!(u8).range(0..16))
+          .default_value("0")
+        )
+        .arg(
+          arg!([VOLUME] "Volume level to set the buzz to")
+          .value_parser(clap::value_parser!(u8).range(0..16))
+          .default_value("0")
+        ),
       )
       .subcommand(
         Command::new("volume")
         .about("Set the volume level")
-        .arg(arg!([LEVEL])),
+        .arg(
+          arg!([LEVEL] "Volume level to set")
+            .value_parser(clap::value_parser!(u8).range(0..16))
+            .default_value("0")
+        ),
       )
       .subcommand(
         Command::new("state")
         .about("Get the current state of the device")
       )
       .subcommand(
-        Command::new("Reset")
+        Command::new("Off")
         .about("Set the device to default state")
+      )
+      .subcommand(
+        Command::new("info")
+        .about("Get information on available colors, led patterns, buzzer patterns, and volume levels")
       )
       .get_matches();
     
@@ -63,10 +211,48 @@ fn main() -> Result<()> {
     //     if handle.kernel_driver_active(0)? {
 
     match matches.subcommand() {
-        Some(("add", sub_matches)) => println!(
-            "'myapp add' was used, name is: {:?}",
-            sub_matches.get_one::<String>("NAME")
-        ),
+        Some(("lightbuzz", sub_matches)) => {
+          let color = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
+          let color_pattern = sub_matches.get_one::<u8>("COLORPATTERN").expect("Color Pattern is required");
+          let buzzer_pattern = sub_matches.get_one::<u8>("BUZZERPATTERN").expect("Buzzer Pattern is required");
+          let volume = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
+          let repetition = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
+
+          println!("LightBuzz: \n\tColor: {}, \n\tColor Pattern: {}, \n\tBuzzer Pattern: {}, \n\tRepetition: {}, \n\tVolume: {}", color, color_pattern, buzzer_pattern, repetition, volume);
+          set_master_controls_command(&mut handle, color, color_pattern, buzzer_pattern, repetition, volume)?;        
+        },
+        Some(("light", sub_matches)) => {
+          let color = sub_matches.get_one::<u8>("COLOR").expect("Color is required");
+          let pattern = sub_matches.get_one::<u8>("PATTERN").expect("Pattern is required");
+          println!("Light: Color: {}, Pattern: {}", color, pattern);
+
+          set_light_command(&mut handle, color, pattern)?;
+        },
+        Some(("buzz", sub_matches)) => {
+          let buzzer_pattern = sub_matches.get_one::<u8>("PATTERN").expect("Buzzer Pattern is required");
+          let volume = sub_matches.get_one::<u8>("VOLUME").expect("Volume is required");
+          let repetition = sub_matches.get_one::<u8>("REPETITION").expect("Repetition is required");
+
+          set_buzz_command(&mut handle, buzzer_pattern, repetition, volume)?;
+        },
+        Some(("volume", sub_matches)) => {
+            let level = sub_matches.get_one::<u8>("LEVEL").expect("Level is required");
+            println!("Volume: Level: {}", level);
+
+            set_volume_command(&mut handle, level)?;
+        },
+        Some(("state", _)) => {
+            println!("State");
+            get_settings(&mut handle)?;
+        },
+        Some(("Off", _)) => {
+            println!("Off");
+            set_blank(&mut handle)?;
+        },
+        Some(("info", _)) => {
+            println!("Info");
+            // TODO: Implement this
+        },
         _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
     }
 
@@ -230,11 +416,11 @@ fn print_data(data: [u8; 8]) {
   println!("Data: |{} {}|{} {}|{} {}|{} {}|", byte1, byte2, byte3, byte4, byte5, byte6, byte7, byte8);
 }
 
-fn send_command<T: UsbContext>(handle: &mut DeviceHandle<T>, data: [u8; 8]) -> Result<usize> {
+fn send_command<T: UsbContext>(handle: &mut DeviceHandle<T>, data: Data) -> Result<usize> {
   println!("\tSending command");
   let timeout = Duration::from_millis(constants::SEND_TIMEOUT);
   // Send command
-  handle.write_interrupt(constants::ENDPOINT_ADDRESS, &data, timeout)
+  handle.write_interrupt(constants::ENDPOINT_ADDRESS, &data.to_array(), timeout)
 }
 
 fn read_interrupt<T: UsbContext>(handle: &mut DeviceHandle<T>) {
@@ -245,29 +431,131 @@ fn read_interrupt<T: UsbContext>(handle: &mut DeviceHandle<T>) {
   print!("Read interrupt: {:?}", res);
 }
 
-fn set_light(handle: &mut DeviceHandle<rusb::Context>, color: u32, pattern: u32) -> Result<bool> {
-  // Specify the LED color and LED pattern
-  // Paramters:
-  //  Colors: 
-  //    0. 0x00 - Off
-  //    1. 0x01 - Red
-  //    2. 0x02 - Green
-  //    3. 0x03 - Yellow
-  //    4. 0x04 - Blue
-  //    5. 0x05 - l
-  //    6. 0x06 - Sky blue
-  //    7. 0x07 - White
-  //    8. 0x08 ~ 0x0F - Keep the current settings
-  // Pattern: 
-  //    1. 0x00 - Off
-  //    2. 0x01 - On
-  //    3. 0x02 - LED pattern1
-  //    4. 0x03 - LED pattern2
-  //    5. 0x04 - LED pattern3
-  //    6. 0x05 - LED pattern4
-  //    7. 0x06 - LED pattern5
-  //    8. 0x07 - LED pattern6
-  //    9. 0x08 ~ 0x0F - Keep the current settings
+fn set_master_controls_command(handle: &mut DeviceHandle<rusb::Context>, color: &u8, color_pattern: &u8, buzzer_pattern: &u8, repetition: &u8, volume: &u8) -> Result<bool> {
+  // Set controls for everything, i.e., alarm, buzzer and led controls
+  let buzzer_control: u8 = repetition << 4 | buzzer_pattern;
+  let led_control: u8 = color << 4 | color_pattern; // Combine color and pattern into a single byte
+
+  let mut master_controls: Data = Data::default();
+  master_controls.set_alarm_control(buzzer_control);
+  master_controls.set_led_control(led_control);
+  master_controls.set_volume(*volume);
+
+  println!("Master Controls: {:?}", master_controls.to_array());
+  match send_command(handle, master_controls) {
+    Ok(u) => println!("Command sent successfully: {:?}", u),
+    Err(e) => {
+      println!("Failed to send command: {:?}", e);
+      return Ok(false);
+    },
+  }
+  
+  Ok(true)
+}
+
+fn set_light_command(handle: &mut DeviceHandle<rusb::Context>, color: &u8, pattern: &u8) -> Result<bool> {
+  // Ensure color is in the range 0-15 (4 bits) and pattern is in the range 0-15 (4 bits)
+  let buzzer_control: u8 = constants::BUZZER_COUNT_KEEP << 4 | constants::BUZZER_KEEP;
+  let led_control: u8 = (color & 0x0F) << 4 | (pattern & 0x0F); // Combine color and pattern into a single byte
+  // let red_on: [u8; 8] = [ 0x00, 0x00, 0x10, 0x00, 0x11, 0x00, 0x00, 0x00 ]; // Continous red light example
+  println!("buzzer_control: {}", buzzer_control);
+  println!("led_control: {}", led_control);
+
+  // let light_data: [u8; 8] = [
+  //   constants::COMMAND_VERSION, // Command version
+  //   constants::COMMAND_ID_CONTROL, // Command ID
+  //   buzzer_control, // Alarm Control if commandId is 0, if commandId is 1, then its Setting
+  //   constants::BUZZER_VOLUME_KEEP, // Buzzer volume
+  //   led_control, // LED Control
+  //   constants::BLANK, // Reserved
+  //   constants::BLANK, // Reserved
+  //   constants::BLANK, // Reserved
+  // ];
+  let mut light_data: Data = Data::default();
+  light_data.set_led_control(led_control);
+
+  println!("Light Data: {:?}", light_data.to_array());
+  match send_command(handle, light_data) {
+    Ok(u) => println!("Command sent successfully: {:?}", u),
+    Err(e) => {
+      println!("Failed to send command: {:?}", e);
+      return Ok(false);
+    },
+  }
+  return Ok(true);
+}
+
+fn set_buzz_command(handle: &mut DeviceHandle<rusb::Context>, pattern: &u8, repetition: &u8, volume: &u8) -> Result<bool> {
+  // Specify the buzzer pattern, number of times to repeat the buzzer, and the volume
+  // let buzz_data: [u8; 8] = [
+  //   constants::COMMAND_VERSION, // Command version
+  //   constants::COMMAND_ID_CONTROL, // Command ID
+  //   constants::LED_COLOR_KEEP, // LED color
+  //   constants::LED_PATTERN_KEEP, // LED pattern
+  //   repetition, // Number of buzzers
+  //   pattern, // Buzzer pattern
+  //   volume, // Buzzer volume
+  //   constants::BLANK, // Reserved
+  // ];
+  let mut buzz_data: Data = Data::default();
+  buzz_data.set_alarm_control(repetition << 4 | pattern);
+  buzz_data.set_volume(*volume);
+
+  match send_command(handle, buzz_data) {
+    Ok(u) => println!("Command sent successfully: {:?}", u),
+    Err(e) => {
+      println!("Failed to send command: {:?}", e);
+      return Ok(false);
+    },
+  }
+  return Ok(true);
+}
+
+fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
+    // Turn off the light, buzzer, and volume to off
+    // let off: [u8; 8] = [ constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK ]; // Off example
+    let blank_data: Data = Data::blank();
+
+    match send_command(handle, blank_data) {
+      Ok(u) => println!("Command sent successfully: {:?}", u),
+      Err(e) => {
+        println!("Failed to send command: {:?}", e);
+        return Ok(false);
+      },
+    }
+
+    return Ok(true);
+}
+
+fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
+  // Get the current settings of the device
+  // let get_settings: [u8; 8] = [ constants::COMMAND_VERSION, constants::COMMAND_ID_SETTING, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK ]; // Get settings example
+  let get_settings: Data = Data::settings();
+
+  match send_command(handle, get_settings) {
+    Ok(u) => println!("Command sent successfully: {:?}", u),
+    Err(e) => {
+      println!("Failed to send command: {:?}", e);
+      return Ok(false);
+    },
+  }
+
+  return Ok(true);
+}
+
+fn set_volume_command(handle: &mut DeviceHandle<rusb::Context>, volume: &u8) -> Result<bool> {
+  // Set the volume level of the buzzer
+  // let set_volume: [u8; 8] = [ constants::COMMAND_VERSION, constants::COMMAND_ID_CONTROL, constants::BLANK, constants::BUZZER_VOLUME_MAX, constants::BLANK, constants::BLANK, constants::BLANK, constants::BLANK ]; // Set volume example
+  let mut set_volume: Data = Data::default();
+  set_volume.set_volume(*volume);
+
+  match send_command(handle, set_volume) {
+    Ok(u) => println!("Command sent successfully: {:?}", u),
+    Err(e) => {
+      println!("Failed to send command: {:?}", e);
+      return Ok(false);
+    },
+  }
 
   return Ok(true);
 }
