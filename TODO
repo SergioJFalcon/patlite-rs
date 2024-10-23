@@ -1,0 +1,12 @@
+Testing:
+	☐ Device not connected
+	☐ Device disconnecting during operation
+	☐ Read_Interrupt
+	☐ Get Settings
+	☐ Set Settings
+	☐ Commands
+		☐ Master
+		☐ Buzz
+		☐ Volume
+		☐ State
+		☐ Info
