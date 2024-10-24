@@ -294,7 +294,7 @@ impl Data {
 // }
 
 
-fn setup_device() -> Result<DeviceHandle<rusb::Context>> {
+pub fn setup_device() -> Result<DeviceHandle<rusb::Context>> {
 	let mut context: Context = match Context::new() {
 			Ok(c) => c,
 			Err(_) => {
@@ -337,7 +337,7 @@ fn setup_device() -> Result<DeviceHandle<rusb::Context>> {
 	Ok(handle)
 }
 
-fn open_device<T: UsbContext>(
+pub fn open_device<T: UsbContext>(
 	context: &mut T,
 	vid: u16,
 	pid: u16,
@@ -364,7 +364,7 @@ fn open_device<T: UsbContext>(
 	None
 }
 
-fn print_device_info<T: UsbContext>(
+pub fn print_device_info<T: UsbContext>(
 	handle: &mut DeviceHandle<T>,
 	table_builder: &mut Builder,
 ) -> Result<()> {
@@ -399,7 +399,7 @@ fn print_device_info<T: UsbContext>(
 	Ok(())
 }
 
-fn find_readable_endpoints<T: UsbContext>(device: &mut Device<T>) -> Result<Vec<Endpoint>> {
+pub fn find_readable_endpoints<T: UsbContext>(device: &mut Device<T>) -> Result<Vec<Endpoint>> {
 	let device_desc: rusb::DeviceDescriptor = device.device_descriptor()?;
 	let mut endpoints: Vec<Endpoint> = vec![];
 
@@ -431,7 +431,7 @@ fn find_readable_endpoints<T: UsbContext>(device: &mut Device<T>) -> Result<Vec<
 	Ok(endpoints)
 }
 
-fn configure_endpoint<T: UsbContext>(
+pub fn configure_endpoint<T: UsbContext>(
 	handle: &mut DeviceHandle<T>,
 	endpoint: &Endpoint,
 ) -> Result<()> {
@@ -440,13 +440,13 @@ fn configure_endpoint<T: UsbContext>(
 	handle.set_alternate_setting(endpoint.iface, endpoint.setting)
 }
 
-fn send_command<T: UsbContext>(handle: &mut DeviceHandle<T>, data: Data) -> Result<usize> {
+pub fn send_command<T: UsbContext>(handle: &mut DeviceHandle<T>, data: Data) -> Result<usize> {
 	let timeout = Duration::from_millis(SEND_TIMEOUT);
 	// Send command
 	handle.write_interrupt(ENDPOINT_ADDRESS, &data.to_array(), timeout)
 }
 
-fn read_interrupt<T: UsbContext>(handle: &mut DeviceHandle<T>) {
+pub fn read_interrupt<T: UsbContext>(handle: &mut DeviceHandle<T>) {
 	println!("\tReading interrupt");
 	let timeout = Duration::from_millis(SEND_TIMEOUT);
 	let mut buf: [u8; 8] = [0u8; 8];
@@ -456,7 +456,7 @@ fn read_interrupt<T: UsbContext>(handle: &mut DeviceHandle<T>) {
 	print!("Read interrupt: {:?}", res);
 }
 
-fn set_master_controls_command(
+pub fn set_master_controls_command(
 	handle: &mut DeviceHandle<rusb::Context>,
 	color: &u8,
 	color_pattern: &u8,
@@ -484,7 +484,7 @@ fn set_master_controls_command(
 	Ok(true)
 }
 
-fn set_light_command(
+pub fn set_light_command(
 	handle: &mut DeviceHandle<rusb::Context>,
 	color: &u8,
 	pattern: &u8,
@@ -504,7 +504,7 @@ fn set_light_command(
 	return Ok(true);
 }
 
-fn set_buzz_command(
+pub fn set_buzz_command(
 	handle: &mut DeviceHandle<rusb::Context>,
 	pattern: &u8,
 	repetition: &u8,
@@ -527,7 +527,7 @@ fn set_buzz_command(
 	return Ok(true);
 }
 
-fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
+pub fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 	// Turn off the light, buzzer, and volume to off
 	let blank_data: Data = Data::blank();
 
@@ -542,7 +542,7 @@ fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 	return Ok(true);
 }
 
-fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
+pub fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 	// Get the current settings of the device
 	let get_settings: Data = Data::settings();
 
@@ -557,7 +557,7 @@ fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 	return Ok(true);
 }
 
-fn set_volume_command(handle: &mut DeviceHandle<rusb::Context>, volume: &u8) -> Result<bool> {
+pub fn set_volume_command(handle: &mut DeviceHandle<rusb::Context>, volume: &u8) -> Result<bool> {
 	// Set the volume level of the buzzer
 	let mut set_volume: Data = Data::default();
 	set_volume.set_volume(*volume);

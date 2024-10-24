@@ -1,6 +1,7 @@
 use rusb::{Context, DeviceHandle, Result};
 use clap::{arg, command, ArgMatches, Command};
 use tabled::{builder::Builder, settings::Style};
+use patlite_rs::{get_settings, print_device_info, set_blank, set_buzz_command, set_light_command, set_master_controls_command, set_volume_command, setup_device};
 
 fn main() -> Result<()> {
     let matches: ArgMatches = command!()
@@ -165,7 +166,7 @@ fn main() -> Result<()> {
             let mut handle: DeviceHandle<Context> = setup_device()?;
             get_settings(&mut handle)?;
         }
-        Some(("Off", _)) => {
+        Some(("off", _)) => {
             let mut handle: DeviceHandle<Context> = setup_device()?;
             set_blank(&mut handle)?;
         }
