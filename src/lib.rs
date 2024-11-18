@@ -327,7 +327,7 @@ pub fn setup_device() -> Result<DeviceHandle<rusb::Context>> {
 	// println!("Endpoint: {:#?}", endpoint);
 	// claim and configure device
 	let _endpoint_config = match configure_endpoint(&mut handle, endpoint) {
-			Ok(_) => println!("Endpoint configured successfully"),
+			Ok(_) => (),
 			Err(e) => {
 					println!("Failed to configure endpoint: {:?}", e);
 					return Err(rusb::Error::NotFound);
@@ -474,7 +474,7 @@ pub fn set_master_controls_command(
 	master_controls.set_volume(*volume);
 
 	match send_command(handle, master_controls) {
-			Ok(u) => println!("Command sent successfully: {:?}", u),
+			Ok(u) => (),
 			Err(e) => {
 					println!("Failed to send command: {:?}", e);
 					return Ok(false);
@@ -488,14 +488,17 @@ pub fn set_light_command(
 	handle: &mut DeviceHandle<rusb::Context>,
 	color: &u8,
 	pattern: &u8,
+  duration: &u16,
 ) -> Result<bool> {
 	// Ensure color is in the range 0-15 (4 bits) and pattern is in the range 0-15 (4 bits)
 	let mut light_data: Data = Data::default();
 	let led_control: u8 = (color & 0x0F) << 4 | (pattern & 0x0F); // Combine color and pattern into a single byte
 	light_data.set_led_control(led_control);
 
+  // TODO: Set the duration of the light
+
 	match send_command(handle, light_data) {
-			Ok(u) => println!("Command sent successfully: {:?}", u),
+			Ok(u) => (),
 			Err(e) => {
 					println!("Failed to send command: {:?}", e);
 					return Ok(false);
@@ -517,7 +520,7 @@ pub fn set_buzz_command(
 	buzz_data.set_volume(*volume);
 
 	match send_command(handle, buzz_data) {
-			Ok(u) => println!("Command sent successfully: {:?}", u),
+			Ok(u) => (),
 			Err(e) => {
 					println!("Failed to send command: {:?}", e);
 					return Ok(false);
@@ -532,7 +535,7 @@ pub fn set_blank(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 	let blank_data: Data = Data::blank();
 
 	match send_command(handle, blank_data) {
-			Ok(u) => println!("Command sent successfully: {:?}", u),
+			Ok(u) => (),
 			Err(e) => {
 					println!("Failed to send command: {:?}", e);
 					return Ok(false);
@@ -547,7 +550,7 @@ pub fn get_settings(handle: &mut DeviceHandle<rusb::Context>) -> Result<bool> {
 	let get_settings: Data = Data::settings();
 
 	match send_command(handle, get_settings) {
-			Ok(u) => println!("Command sent successfully: {:?}", u),
+			Ok(u) => (),
 			Err(e) => {
 					println!("Failed to send command: {:?}", e);
 					return Ok(false);
@@ -563,7 +566,7 @@ pub fn set_volume_command(handle: &mut DeviceHandle<rusb::Context>, volume: &u8)
 	set_volume.set_volume(*volume);
 
 	match send_command(handle, set_volume) {
-			Ok(u) => println!("Command sent successfully: {:?}", u),
+			Ok(u) => (),
 			Err(e) => {
 					println!("Failed to send command: {:?}", e);
 					return Ok(false);

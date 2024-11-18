@@ -51,6 +51,11 @@ fn main() -> Result<()> {
         arg!([PATTERN] "Pattern to set the light to")
           .value_parser(clap::value_parser!(u8).range(0..16))
           .default_value("0")
+      )
+      .arg(
+        arg!(["DURATION"] "Duration to set the light to")
+          .value_parser(clap::value_parser!(u16).range(0..16))
+          .default_value("0")
       ),
     )
     .subcommand(
@@ -136,9 +141,12 @@ fn main() -> Result<()> {
             let pattern: &u8 = sub_matches
                 .get_one::<u8>("PATTERN")
                 .expect("Pattern is required");
+            let duration: &u16 = sub_matches
+                .get_one::<u16>("DURATION")
+                .expect("Duration is required");
 
             let mut handle: DeviceHandle<Context> = setup_device()?;
-            set_light_command(&mut handle, color, pattern)?;
+            set_light_command(&mut handle, color, pattern, duration)?;
         }
         Some(("buzz", sub_matches)) => {
             let buzzer_pattern: &u8 = sub_matches
