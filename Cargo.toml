@@ -11,3 +11,20 @@ rusb = "0.9"
 byteorder = "1.4"
 clap = { version = "4.5.20", features = ["cargo"] }
 tabled = "0.16.0"
+
+[profile.release]
+# Enable link-time optimization (LTO)
+# lto = true
+# Enable optimization for size
+codegen-units = 1
+# Maximum optimization level
+opt-level = 3
+# Enable fat LTO for better optimization
+lto = "fat"
+# Strip debug symbols
+strip = true
+# Enable panic abort instead of unwinding
+panic = "abort"
+
+[profile.release.package."*"]
+opt-level = 3
